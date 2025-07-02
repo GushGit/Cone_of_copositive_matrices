@@ -4,12 +4,16 @@
 
 using namespace std;
 
+int zeroStats = 0;
+
 struct Matrix {
 	int size;
 	vector<vector<ld>> v;
 	
 	ld sum;
 	vector<ld> negSums;
+
+	bool failed;
 	
 	Matrix(int size) {
 		this->size = size;
@@ -17,16 +21,60 @@ struct Matrix {
 		
 		sum = 0;
 		negSums = vector<ld> (size);
+
+		failed = false;
 	}
 
+	vector<pair<int, int>> changes;
+
 	tuple<int, int, ld> set(int i, int j, ld val) {
+		if(i == j && val == 0) zeroStats++;
 		sum -= v[i][j];
 		sum += val;
 		if(i != j && v[i][j] < 0) negSums[i] -= v[i][j];
 		ld prev = v[i][j];
 		v[i][j] = val;
 		if(i != j && v[i][j] < 0) negSums[i] += v[i][j];
+
+		if(i == j && v[i][i] >= 0) {
+			for(int k = 0; k < size; k++) {
+				if(i == k) continue;
+				changes.push_back({i, k});
+			}
+		} else changes.push_back({i, j});
+
 		return {i, j, prev};
+	}
+
+	void changesUpdate() {
+		for(auto [i, j] : changes) {
+			if(i == j || v[i][j] >= 0) continue;
+			if(v[i][j] * v[i][j] > v[i][i] * v[j][j]) failed = true;
+		}
+		changes.clear();
+	}
+
+	void fullUpdate() {
+		sum = 0;
+		for(auto &x : v) {
+			for(auto y : x) {
+				sum += y;
+			}
+		}
+		negSums = vector<ld> (size, 0);
+		for(int i = 0; i < size; i++) {
+			for(int j = 0; j < size; j++) {
+				if(i == j || v[i][j] >= 0) continue;
+				negSums[i] += v[i][j];
+			}
+		}
+		failed = false;
+		for(int i = 0; i < size; i++) {
+			for(int j = 0; j < size; j++) {
+				if(i == j || v[i][j] >= 0) continue;
+				if(v[i][j] * v[i][j] > v[i][i] * v[j][j]) failed = true;
+			}
+		}
 	}
 
 	vector<ld> &operator[](int i) {
@@ -35,16 +83,18 @@ struct Matrix {
 
 };
 
-bool isCopositive(Matrix &v, int depth, int &maxDepth) {
+bool isCopositive(Matrix &v, int depth, int &maxDepth, int &timer) {
 	maxDepth = max(maxDepth, depth);
-	if(v.sum < 0) return false;
-	//if(depth > 128) return true;
-	//cout << depth << " " << v[0][0] << endl;
 
 	int n = v.size;
 
-	// Необходимое условие
+	if(timer % n == 0) v.fullUpdate();
+	timer++;
+
+	// Необходимые условия
 	{
+		if(v.failed) return false;
+		if(v.sum < 0) return false;
 		for(int i = 0; i < n; i++) {
 			if(v[i][i] < 0) return false;
 		}
@@ -82,7 +132,8 @@ bool isCopositive(Matrix &v, int depth, int &maxDepth) {
 		for(int i = 0; i < n; i++) {
 			changes[n + i] = v.set(i, r, v[i][r] * alpha + v[i][c] * (1 - alpha));
 		}
-		if(!isCopositive(v, depth + 1, maxDepth)) return false;
+		v.changesUpdate();
+		if(!isCopositive(v, depth + 1, maxDepth, timer)) return false;
 
 		reverse(changes.begin(), changes.end());
 		for(auto [i, j, val] : changes) {
@@ -96,7 +147,7 @@ bool isCopositive(Matrix &v, int depth, int &maxDepth) {
 	return true;
 }
 
-bool solve(ifstream &fin) {
+bool solveForCopositive(ifstream &fin) {
 	int n;
 	fin >> n;
 
@@ -110,7 +161,8 @@ bool solve(ifstream &fin) {
 	}
 
 	int maxDepth = 0;
-	bool copositive = isCopositive(v, 0, maxDepth);
+	int timer = 0;
+	bool copositive = isCopositive(v, 0, maxDepth, timer);
 	cout << "Copositive: " << (copositive ? "YES" : "NO") << endl;
 	cout << "Max Search Depth: " << maxDepth << endl;
 
@@ -118,12 +170,72 @@ bool solve(ifstream &fin) {
 	fin >> s;
 	bool expected = (s == "YES");
 
-	return (expected == copositive);
+	return (copositive == expected);
 }
+
+int findCliqueNumber(vector<vector<int>> &g) {
+	int n = g.size();
+
+	int l = 1, r = n;
+	while(l <= r) {
+		int mid = (l + r) / 2;
+		Matrix v(n);
+		ld currAlpha = (ld) (mid - 1) / mid;
+		ld nextAlpha = (ld) mid / (mid + 1);
+		for(int i = 0; i < n; i++) {
+			for(int j = 0; j < n; j++) {
+				v.set(i, j, (currAlpha + nextAlpha) / 2 - g[i][j]);
+			}
+		}
+		int maxDepth = 0;
+		int timer = 0;
+		bool copositive = isCopositive(v, 0, maxDepth, timer);
+		if(copositive) r = mid - 1;
+		else l = mid + 1;
+	}
+
+	return l;
+}
+
+bool solveForClique(ifstream &fin) {
+	int n;
+	fin >> n;
+
+	vector<vector<int>> g(n, vector<int> (n));
+	for(auto &x : g) {
+		for(auto &y : x) {
+			fin >> y;
+		}
+	}
+
+	int cliqueNumber = findCliqueNumber(g);
+	cout << "Clique number: " << cliqueNumber << endl;
+
+	int expected;
+	fin >> expected;
+
+	return (cliqueNumber == expected);
+}
+
+enum Mode {
+	IS_COPOSITIVE,
+	CLIQUE_NUMBER
+};
 
 int32_t main() {
 	
-	ifstream fin("input.txt");
+	cout << "Input file name: ";
+	string inputName;
+	cin >> inputName;
+	cout << endl;
+	ifstream fin(inputName);
+
+	string modeString;
+	fin >> modeString;
+
+	Mode mode;
+	if(modeString == "IS_COPOSITIVE") mode = IS_COPOSITIVE;
+	if(modeString == "CLIQUE_NUMBER") mode = CLIQUE_NUMBER;
 	
 	vector<int> unexpected;
 
@@ -131,8 +243,11 @@ int32_t main() {
 	fin >> t;
 	for(int i = 1; i <= t; i++) {
 		cout << "# Test case " << i << endl;
-		cout << "---" << endl;
-		if(!solve(fin)) unexpected.push_back(i);
+		bool passed = true;
+		if(mode == IS_COPOSITIVE) passed = solveForCopositive(fin);
+		if(mode == CLIQUE_NUMBER) passed = solveForClique(fin);
+		if(!passed) unexpected.push_back(i);
+		cout << "---" << endl << endl;
 	}
 
 	if(unexpected.size()) {
@@ -149,5 +264,7 @@ int32_t main() {
 		cout << "!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 		cout << "!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 	}
+
+	cout << "Diagonal zeros during all tests: " << zeroStats << endl;
 	
 }
