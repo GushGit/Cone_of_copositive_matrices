@@ -4,7 +4,8 @@
 
 using namespace std;
 
-int zeroStats = 0;
+int diagonalZeros = 0;
+int isCopositiveCalls = 0;
 
 struct Matrix {
 	int size;
@@ -28,7 +29,7 @@ struct Matrix {
 	vector<pair<int, int>> changes;
 
 	tuple<int, int, ld> set(int i, int j, ld val) {
-		if(i == j && val == 0) zeroStats++;
+		if(i == j && val == 0) diagonalZeros++;
 		sum -= v[i][j];
 		sum += val;
 		if(i != j && v[i][j] < 0) negSums[i] -= v[i][j];
@@ -84,9 +85,11 @@ struct Matrix {
 };
 
 bool isCopositive(Matrix &v, int depth, int &maxDepth, int &timer) {
-	maxDepth = max(maxDepth, depth);
+	isCopositiveCalls++;
 
 	int n = v.size;
+
+	maxDepth = max(maxDepth, depth);
 
 	if(timer % n == 0) v.fullUpdate();
 	timer++;
@@ -265,6 +268,6 @@ int32_t main() {
 		cout << "!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 	}
 
-	cout << "Diagonal zeros during all tests: " << zeroStats << endl;
-	
+	cout << "Diagonal zeros during all tests: " << diagonalZeros << endl;
+	cout << "isCopositive calls during all tests: " << isCopositiveCalls << endl;
 }
