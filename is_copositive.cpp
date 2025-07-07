@@ -4,7 +4,7 @@
 
 using namespace std;
 
-const ld EPSILON = 1e-9
+const ld EPSILON = 1e-9;
 
 bool sufficientForSP(vector<vector<ld>> v) {
     int n = v.size();
