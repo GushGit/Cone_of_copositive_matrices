@@ -5,4 +5,3 @@
 using namespace std;
 
 bool isCopositive(vector<vector<ld>> v);
-
