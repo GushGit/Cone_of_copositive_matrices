@@ -23,14 +23,31 @@ bool passesDominantDiagonals(vector<vector<ld>> v) {
 
 // Not sure what exactly it passes
 bool passesInSP(vector<vector<ld>> v) {
+    // TODO for now it only slows down the algo (zero return true rate)
     return false;
+
     int n = v.size();
 
     vector<vector<ld>> invq(n, vector<ld> (n));
     // TODO invq (Q^-1) = ...
+    for(int i = 0; i < n; i++) {
+        invq[i][i] -= 1 / v[i][i];
+    }
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+            invq[i][j] += 1 / ((n - 1) * sqrt(v[i][i]) * sqrt(v[j][j]));
+        }
+    }
 
-    vector<vector<ld>> g = v;
+    vector<vector<ld>> g(n, vector<ld> (n));
     // TODO g = Q^-1 * A (v)
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+            for(int k = 0; k < n; k++) {
+                g[i][j] += invq[i][k] * v[k][j];
+            }
+        }
+    }
 
     if(g[0][0] == 0) return false;
 
