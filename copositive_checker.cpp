@@ -6,70 +6,104 @@ using namespace std;
 
 const ld EPSILON = 1e-6;
 
-bool passesDominantDiagonals(vector<vector<ld>> v) {
-    int n = v.size();
+vector<vector<ld>> mul(vector<vector<ld>> a, vector<vector<ld>> b) {
+    int n = a.size();
+    int m = b.size();
+    int r = b[0].size();
 
+    vector<vector<ld>> c(n, vector<ld> (r));
     for(int i = 0; i < n; i++) {
-        ld negativeSum = 0;
-        for(int j = 0; j < n; j++) {
-            if(v[i][j] > 0 || i == j) continue;
-            negativeSum += v[i][j];
-        }
-        if(v[i][i] + negativeSum < -EPSILON) return false;
-    }
-
-    return true;
-}
-
-// Not sure what exactly it passes
-bool passesInSP(vector<vector<ld>> v) {
-    // TODO for now it only slows down the algo (zero return true rate)
-    return false;
-
-    int n = v.size();
-
-    vector<vector<ld>> invq(n, vector<ld> (n));
-    // TODO invq (Q^-1) = ...
-    for(int i = 0; i < n; i++) {
-        invq[i][i] -= 1 / v[i][i];
-    }
-    for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
-            invq[i][j] += 1 / ((n - 1) * sqrt(v[i][i]) * sqrt(v[j][j]));
-        }
-    }
-
-    vector<vector<ld>> g(n, vector<ld> (n));
-    // TODO g = Q^-1 * A (v)
-    for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
-            for(int k = 0; k < n; k++) {
-                g[i][j] += invq[i][k] * v[k][j];
+        for(int j = 0; j < r; j++) {
+            for(int k = 0; k < m; k++) {
+                c[i][j] += a[i][k] * b[k][j];
             }
         }
     }
 
-    if(g[0][0] == 0) return false;
+    return c;
+}
 
-    for(int i = 1; i < n; i++) {
-        ld mul = g[i][0] / g[0][0];
-        for(int j = 0; j < n; j++) {
-            ld diff = abs(g[i][j] - g[0][j] * mul);
-            if(diff < EPSILON) continue;
-            // rank is at least 2 => at least 2 eigenvalues => A outside S+ cone
-            return false;
+vector<ld> mul(vector<vector<ld>> a, vector<ld> b) {
+    int n = a.size();
+    int m = b.size();
+
+    vector<ld> c(n);
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < m; j++) {
+            c[i] += a[i][j] * b[j];
         }
     }
 
-    // rank is 1 => 1 eigenvalue => A inside S+ cone
-    return true;
+    return c;
 }
 
-bool passesSufficient(vector<vector<ld>> v) {
-    if(passesDominantDiagonals(v)) return true;
-    if(passesInSP(v)) return true;
+vector<vector<ld>> mul(vector<vector<ld>> a, ld b) {
+    for(auto &x : a) {
+        for(auto &y : x) {
+            y *= b;
+        }
+    }
 
-    return false;
+    return a;
+}
+
+vector<vector<ld>> add(vector<vector<ld>> a, vector<vector<ld>> b) {
+    int n = a.size();
+    int m = a[0].size();
+
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < m; j++) {
+            a[i][j] += b[i][j];
+        }
+    }
+
+    return a;
+}
+
+vector<vector<ld>> pow(vector<vector<ld>> v, int p) {
+    if(p == 1) return v;
+    if(p & 1) return mul(v, pow(v, p - 1));
+    vector<vector<ld>> g = pow(v, p / 2);
+    return mul(g, g);
+}
+
+ld length(vector<ld> v) {
+    ld sum = 0;
+    for(auto x : v) {
+        sum += x * x;
+    }
+    return sqrt(sum);
+}
+
+vector<ld> normalized(vector<ld> v) {
+    ld len = length(v);
+    for(auto &x : v) {
+        x /= len;
+    }
+    return v;
+}
+
+ld absoluteLargestEigenvalue(vector<vector<ld>> v) {
+    int n = v.size();
+
+    vector<ld> x0(n, 1);
+
+    int m = 1 << 4;
+    vector<ld> xm = normalized(mul(pow(v, m), x0));
+    
+    xm = mul(v, xm);
+    return length(xm);
+}
+
+ld largestEigenvalue(vector<vector<ld>> v) {
+    int n = v.size();
+
+    ld absoluteLargest = absoluteLargestEigenvalue(v);
+    for(int i = 0; i < n; i++) {
+        v[i][i] += absoluteLargest;
+    }
+
+    return absoluteLargestEigenvalue(v) - absoluteLargest;
 }
 
 bool failsValues(vector<vector<ld>> v, int lastChange) {
@@ -143,6 +177,101 @@ bool failsNecessary(vector<vector<ld>> v, int lastChange) {
     // checking failsCOP1 is faster?
     // checking ONLY failsCOP1 is even faster?!
     // interesting
+    return false;
+}
+
+bool passesDominantDiagonals(vector<vector<ld>> v) {
+    int n = v.size();
+
+    for(int i = 0; i < n; i++) {
+        ld negativeSum = 0;
+        for(int j = 0; j < n; j++) {
+            if(v[i][j] > 0 || i == j) continue;
+            negativeSum += v[i][j];
+        }
+        if(v[i][i] + negativeSum < -EPSILON) return false;
+    }
+
+    return true;
+}
+
+bool passesInSP(vector<vector<ld>> v) {
+    // TODO gives false positives
+    if(1) return false;
+    int n = v.size();
+
+    vector<vector<ld>> f(n, vector<ld> (n));
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+            f[min(i, j)][max(i, j)] += v[i][j];
+        }
+    }
+
+    for(int i = n - 1; i > 0; i--) {
+        vector<ld> sol(i);
+        for(int j = 0; j < i; j++) {
+            sol[j] = -f[j][i] / f[i][i] / 2;
+        }
+        for(int j = 0; j < i; j++) {
+            for(int k = 0; k < i; k++) {
+                f[min(j, k)][max(j, k)] += f[i][i] * sol[j] * sol[k];
+                f[min(j, k)][max(j, k)] += f[j][i] * sol[k];
+            }
+        }
+    }
+
+    return f[0][0] >= -EPSILON;
+}
+
+// Not sure what exactly it passes
+bool _passesInSP(vector<vector<ld>> v) {
+    // TODO for now it only slows down the algo (zero return true rate)
+    // (isnt it impossible to hit true?)
+    if(1) return false;
+
+    int n = v.size();
+
+    vector<vector<ld>> invq(n, vector<ld> (n));
+    // TODO invq (Q^-1) = ...
+    for(int i = 0; i < n; i++) {
+        invq[i][i] -= 1 / v[i][i];
+    }
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+            invq[i][j] += 1 / ((n - 1) * sqrt(v[i][i]) * sqrt(v[j][j]));
+        }
+    }
+
+    vector<vector<ld>> g = mul(invq, v);
+    ld largest = largestEigenvalue(g);
+    if(largest < -EPSILON) return false;
+
+    vector<vector<ld>> q(n, vector<ld> (n));
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+            if(i == j) continue;
+            q[i][j] = sqrt(v[i][i]) * sqrt(v[j][j]);
+        }
+    }
+
+    vector<vector<ld>> h = add(v, mul(q, -largest));
+    for(auto &x : h) {
+        for(auto y : x) {
+            if(y < -EPSILON) return false;
+        }
+    }
+
+    return true;
+}
+
+bool passesSufficient(vector<vector<ld>> v) {
+    if(v.size() == 0) return true;
+    if(v.size() == 1) return !failsCOP1(v, -1);
+    if(v.size() == 2) return !failsCOP2(v, -1);
+    if(v.size() == 3) return !failsCOP3(v, -1);
+    if(passesDominantDiagonals(v)) return true;
+    if(passesInSP(v)) return true;
+
     return false;
 }
 
