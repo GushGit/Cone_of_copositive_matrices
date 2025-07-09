@@ -88,7 +88,7 @@ ld absoluteLargestEigenvalue(vector<vector<ld>> v) {
 
     vector<ld> x0(n, 1);
 
-    int m = 1 << 4;
+    int m = 1 << 8;
     vector<ld> xm = normalized(mul(pow(v, m), x0));
     
     xm = mul(v, xm);
@@ -104,6 +104,10 @@ ld largestEigenvalue(vector<vector<ld>> v) {
     }
 
     return absoluteLargestEigenvalue(v) - absoluteLargest;
+}
+
+ld smallestEigenvalue(vector<vector<ld>> v) {
+    return -largestEigenvalue(mul(v, -1));
 }
 
 bool failsValues(vector<vector<ld>> v, int lastChange) {
@@ -196,6 +200,11 @@ bool passesDominantDiagonals(vector<vector<ld>> v) {
 }
 
 bool passesInSP(vector<vector<ld>> v) {
+    // TODO no false positives but no positives
+    return smallestEigenvalue(v) >= -EPSILON;
+}
+
+bool __passesInSP(vector<vector<ld>> v) {
     // TODO gives false positives
     if(1) return false;
     int n = v.size();
