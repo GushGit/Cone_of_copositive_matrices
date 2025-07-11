@@ -200,7 +200,7 @@ bool passesDominantDiagonals(vector<vector<ld>> v) {
 }
 
 bool passesInSP(vector<vector<ld>> v) {
-    // TODO no false positives but no positives
+    // no false positives but no positives
     return smallestEigenvalue(v) >= -EPSILON;
 }
 
@@ -234,10 +234,7 @@ bool __passesInSP(vector<vector<ld>> v) {
 
 // Not sure what exactly it passes
 bool _passesInSP(vector<vector<ld>> v) {
-    // TODO for now it only slows down the algo (zero return true rate)
-    // (isnt it impossible to hit true?)
-    if(1) return false;
-
+    // The only only that even returns true sometimes
     int n = v.size();
 
     vector<vector<ld>> invq(n, vector<ld> (n));
@@ -264,13 +261,7 @@ bool _passesInSP(vector<vector<ld>> v) {
     }
 
     vector<vector<ld>> h = add(v, mul(q, -largest));
-    for(auto &x : h) {
-        for(auto y : x) {
-            if(y < -EPSILON) return false;
-        }
-    }
-
-    return true;
+    return passesInSP(h);
 }
 
 bool passesSufficient(vector<vector<ld>> v) {
@@ -279,6 +270,7 @@ bool passesSufficient(vector<vector<ld>> v) {
     if(v.size() == 2) return !failsCOP2(v, -1);
     if(v.size() == 3) return !failsCOP3(v, -1);
     if(passesDominantDiagonals(v)) return true;
+    if(_passesInSP(v)) return true;
     if(passesInSP(v)) return true;
 
     return false;
