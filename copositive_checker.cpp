@@ -1,10 +1,23 @@
 #include <bits/stdc++.h>
+#include "copositive_checker.h"
 
 #define ld long double
 
 using namespace std;
 
 const ld EPSILON = 1e-6;
+
+int checkSubmatricesUpTo = 3;
+int randomVectors = 1;
+int checkSum = false;
+int checkInSP = false;
+int checkInSPPN = false;
+int checkSubtractInSP = false;
+
+int matricesChecked = 0;
+
+mt19937 gen(chrono::system_clock::now().time_since_epoch().count());
+uniform_real_distribution<ld> dist(0.0, 1.0);
 
 vector<vector<ld>> mul(vector<vector<ld>> a, vector<vector<ld>> b) {
     int n = a.size();
@@ -111,17 +124,34 @@ ld smallestEigenvalue(vector<vector<ld>> v) {
 }
 
 bool failsValues(vector<vector<ld>> v, int lastChange) {
-    // Check non-negativity for vector of 1s
-    ld sum = 0;
-    for(auto &x : v) {
-        for(auto y : x) {
-            sum += y;
-        }
-    }
-    if(sum < 0) return true;
+    int n = v.size();
 
-    // TODO
+    // Check non-negativity for vector of 1s
+    if(checkSum) {
+        ld sum = 0;
+        for(auto &x : v) {
+            for(auto y : x) {
+                sum += y;
+            }
+        }
+        if(sum < 0) return true;
+    }
+
     // Check non-negativity for few random vector maybe idk
+    for(int _ = 0; _ < randomVectors; _++) {
+        vector<ld> g(n);
+        for(auto &x : g) {
+            x = dist(gen);
+        }
+        ld sum = 0;
+        for(int i = 0; i < n; i++) {
+            for(int j = 0; j < n; j++) {
+                sum += v[i][j] * g[i] * g[j];
+            }
+        }
+        if(sum < 0) return true;
+    }
+
     return false;
 }
 
@@ -176,11 +206,13 @@ bool failsCOP3(vector<vector<ld>> v, int lastChange) {
 
 bool failsNecessary(vector<vector<ld>> v, int lastChange) {
     if(failsValues(v, lastChange)) return true;
-    if(failsCOP3(v, lastChange)) return true;
-    // checking failsCOP2 instead of failsCOP3 seems to be better in some clique testcase?
-    // checking failsCOP1 is faster?
-    // checking ONLY failsCOP1 is even faster?!
-    // interesting
+    if(checkSubmatricesUpTo == 1) {
+        if(failsCOP1(v, lastChange)) return true;
+    } else if(checkSubmatricesUpTo == 2) {
+        if(failsCOP2(v, lastChange)) return true;
+    } else if(checkSubmatricesUpTo == 3) {
+        if(failsCOP3(v, lastChange)) return true;
+    }
     return false;
 }
 
@@ -200,45 +232,13 @@ bool passesDominantDiagonals(vector<vector<ld>> v) {
 }
 
 bool passesInSP(vector<vector<ld>> v) {
-    // no false positives but no positives
     return smallestEigenvalue(v) >= -EPSILON;
 }
 
-bool __passesInSP(vector<vector<ld>> v) {
-    // TODO gives false positives
-    if(1) return false;
-    int n = v.size();
-
-    vector<vector<ld>> f(n, vector<ld> (n));
-    for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
-            f[min(i, j)][max(i, j)] += v[i][j];
-        }
-    }
-
-    for(int i = n - 1; i > 0; i--) {
-        vector<ld> sol(i);
-        for(int j = 0; j < i; j++) {
-            sol[j] = -f[j][i] / f[i][i] / 2;
-        }
-        for(int j = 0; j < i; j++) {
-            for(int k = 0; k < i; k++) {
-                f[min(j, k)][max(j, k)] += f[i][i] * sol[j] * sol[k];
-                f[min(j, k)][max(j, k)] += f[j][i] * sol[k];
-            }
-        }
-    }
-
-    return f[0][0] >= -EPSILON;
-}
-
-// Not sure what exactly it passes
-bool _passesInSP(vector<vector<ld>> v) {
-    // The only only that even returns true sometimes
+bool passesSubtractInSP(vector<vector<ld>> v) {
     int n = v.size();
 
     vector<vector<ld>> invq(n, vector<ld> (n));
-    // TODO invq (Q^-1) = ...
     for(int i = 0; i < n; i++) {
         invq[i][i] -= 1 / v[i][i];
     }
@@ -264,14 +264,52 @@ bool _passesInSP(vector<vector<ld>> v) {
     return passesInSP(h);
 }
 
+ld boundedEigenvalue(vector<vector<ld>> v, ld bound) {
+    int n = v.size();
+
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+            if(i == j) continue;
+            if(v[i][j] < 0) continue;
+            v[i][j] = min(v[i][j], bound);
+        }
+    }
+
+    return smallestEigenvalue(v);
+}
+
+bool passesInSPPN(vector<vector<ld>> v) {
+    int n = v.size();
+    ld maxx = 0;
+    for(int i = 0; i < n; i++) {
+        for(int j = 0; j < n; j++) {
+            if(i == j) continue;
+            maxx = max(maxx, v[i][j]);
+        }
+    }
+
+    ld l = 0, r = maxx;
+    vector<vector<ld>> g = v;
+    while(r - l >= EPSILON) {
+        ld ll = l + (r - l) / 3;
+        ld rr = r - (r - l) / 3;
+        if(boundedEigenvalue(v, ll) < boundedEigenvalue(v, rr)) {
+            l = rr;
+        } else r = ll; 
+    }
+    
+    return boundedEigenvalue(v, l) > -EPSILON;
+}
+
 bool passesSufficient(vector<vector<ld>> v) {
     if(v.size() == 0) return true;
     if(v.size() == 1) return !failsCOP1(v, -1);
     if(v.size() == 2) return !failsCOP2(v, -1);
     if(v.size() == 3) return !failsCOP3(v, -1);
     if(passesDominantDiagonals(v)) return true;
-    if(_passesInSP(v)) return true;
-    if(passesInSP(v)) return true;
+    if(checkInSP && passesInSP(v)) return true;
+    if(checkInSPPN && passesInSPPN(v)) return true;
+    if(checkSubtractInSP && passesSubtractInSP(v)) return true;
 
     return false;
 }
@@ -281,6 +319,7 @@ bool isCopositive(vector<vector<ld>> g) {
     q.push({g, -1});
 
     while(q.size()) {
+        matricesChecked++;
         vector<vector<ld>> v = q.front().first;
         int prev = q.front().second;
         q.pop();
