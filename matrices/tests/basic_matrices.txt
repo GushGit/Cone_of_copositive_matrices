@@ -1,5 +1,3 @@
-IS_COPOSITIVE
-
 12
 
 3
