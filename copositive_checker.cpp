@@ -7,9 +7,9 @@ using namespace std;
 
 const ld EPSILON = 1e-6;
 
-int checkSubmatricesUpTo = 3;
+int checkSubmatricesUpTo = 2;
 int randomVectors = 1;
-int checkSum = false;
+int checkSum = true;
 int checkInSP = false;
 int checkInSPPN = false;
 int checkSubtractInSP = false;
