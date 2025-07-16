@@ -10,12 +10,12 @@ int main() {
     cin.tie(NULL);
 
     {
-        cin >> checkSubmatricesUpTo;
-        cin >> randomVectors;
-        cin >> checkSum;
-        cin >> checkInSP;
-        cin >> checkInSPPN;
-        cin >> checkSubtractInSP;
+        cin >> checkSubmatricesUpTo; // 1, 2, 3
+        cin >> randomVectors; // non-neg integer
+        cin >> checkSum; // 0, 1
+        cin >> checkInSP; // 0, 1
+        cin >> checkInSPPN; // 0, 1
+        cin >> checkSubtractInSP; // 0, 1
     }
 
     int t;
