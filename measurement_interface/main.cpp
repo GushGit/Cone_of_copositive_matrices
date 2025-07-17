@@ -5,31 +5,56 @@
 
 using namespace std;
 
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(NULL);
+string conf(vector<int> vals) {
+    string ans = "";
+    int n = vals.size();
 
-    {
-        cin >> checkSubmatricesUpTo; // 1, 2, 3
-        cin >> randomVectors; // non-neg integer
-        cin >> checkSum; // 0, 1
-        cin >> checkInSP; // 0, 1
-        cin >> checkInSPPN; // 0, 1
-        cin >> checkSubtractInSP; // 0, 1
-    }
+    for(int i = 0; i < n - 1; i++) {
+        ans += to_string(vals[i]) + "_";
+    } ans += to_string(vals[n - 1]);
+
+    return ans;
+}
+
+int main() {
+    string iconf;
+    cin >> iconf;
+    ifstream fin(iconf);
 
     int t;
-    cin >> t;
+    fin >> t;
+
+    {
+        fin >> checkSubmatricesUpTo; // 1, 2, 3
+        fin >> randomVectors; // non-neg integer
+        fin >> checkSum; // 0, 1
+        fin >> checkInSP; // 0, 1
+        fin >> checkInSPPN; // 0, 1
+        fin >> checkSubtractInSP; // 0, 1
+    }
+
+    string configuration = conf({
+        checkSubmatricesUpTo, 
+        randomVectors, 
+        checkSum,
+        checkInSP,
+        checkInSPPN,
+        checkSubtractInSP,
+    });
+
+    cout << configuration << '\n';
+    configuration = "../measurement_interface/output/" + configuration;
+    ofstream fout(configuration);
 
     long long ns = 0;
     for(int i = 1; i <= t; i++) {
         int n;
-        cin >> n;
+        fin >> n;
 
         vector<vector<ld>> v(n, vector<ld> (n));
         for(auto &x : v) {
             for(auto &y : x) {
-                cin >> y;
+                fin >> y;
             }
         }
 
@@ -37,8 +62,10 @@ int main() {
         isCopositive(v);
         auto t2 = chrono::high_resolution_clock::now();
         ns += chrono::duration_cast<chrono::nanoseconds> (t2 - t1).count();
+
+        fout << chrono::duration_cast<chrono::nanoseconds> (t2 - t1).count() << '\n';
     }
 
-    cout << ns << endl;
-    cout << matricesChecked << endl;
+    fout << ns << '\n';
+    fout << matricesChecked << '\n';
 }
