@@ -158,24 +158,24 @@ def k_regular_graph(n, k):
 
 def decide_mode(m):
 	if m == "gauss":
-		n = int(input("vert: "))
-		m = int(input("mean: "))
-		d = int(input("distr: "))
-		return [gaussian_random_matrix, n, m, d]
+		n = int(input("size: "))
+		m = float(input("mean: "))
+		d = float(input("distr: "))
+		return [gaussian_random_matrix, 0, n, m, d]
 	elif m == "border":
-		n = int(input("vert: "))
-		return [border_cop_matrix, n]
+		n = int(input("size: "))
+		return [border_cop_matrix, 0, n]
 	elif m == "compl":
 		n = int(input("vert: "))
-		return [complete_graph, n]
-	elif m == "prob_edge":
+		return [complete_graph, 1, n]
+	elif m == "p_edge":
 		n = int(input("vert: "))
 		p = float(input("prob: "))
-		return [random_edge, n, p]
+		return [random_edge, 1, n, p]
 	elif m == "kreg":
 		n = int(input("vert: "))
 		k = int(input("deg: "))
-		return [k_regular_graph, n, k]
+		return [k_regular_graph, 1, n, k]
 
 
 t = max(1, int(input("t >= 1: ")))
@@ -184,16 +184,19 @@ rv = max(0, int(input("rv >= 0: ")))
 cs, cisp, cisppn, csisp = map(int, input("cs, cisp, cisppn, csisp:\n").split())
 
 t_mode = decide_mode(input("mode: "))
+cmt = input("comment: ")
 
 filename = ""
-config = [t_mode[0].__name__, t, csut, rv, cs, cisp, cisppn, csisp]
+config = [t_mode[0].__name__, t_mode[1], t, csut, rv, cs, cisp, cisppn, csisp]
 for i in range(len(config) - 1):
-	filename += str(csut) + "_"
+	filename += str(config[i]) + "_"
 filename += str(config[-1])
 filename = "./input/" + filename
 
 t_file = open(filename, "w")
+print(filename)
 
+t_file.writelines("comment: " + cmt + '\n')
 t_file.writelines(list(map(lambda x: str(x) + '\n', config[1:])))
 for i in range(t):
-	t_file.write(t_mode[0](*t_mode[1:]))
+	t_file.write(t_mode[0](*t_mode[2:]))

@@ -1,5 +1,6 @@
 #include <bits/stdc++.h>
 #include "../copositive_checker.h"
+#include "../clique_number/clique_finder.h"
 
 #define ld long double
 
@@ -20,6 +21,12 @@ int main() {
     string iconf;
     cin >> iconf;
     ifstream fin(iconf);
+
+    string commentary;
+    getline(fin, commentary);
+
+    int type;
+    fin >> type;
 
     int t;
     fin >> t;
@@ -46,6 +53,8 @@ int main() {
     configuration = "../measurement_interface/output/" + configuration;
     ofstream fout(configuration);
 
+    fout << commentary << '\n';
+
     long long ns = 0;
     for(int i = 1; i <= t; i++) {
         int n;
@@ -59,11 +68,23 @@ int main() {
         }
 
         auto t1 = chrono::high_resolution_clock::now();
-        isCopositive(v);
+        if(type == 0) {
+            isCopositive(v);
+        } else {
+            vector<vector<int>> am(n, vector<int>(n));
+            for(int i = 0; i < n; i++){
+                for(int j = 0; j < n; j++) {
+                    am[i][j] = (int) v[i][j];
+                }
+            }
+            cliqueNumber(am);
+        }
         auto t2 = chrono::high_resolution_clock::now();
-        ns += chrono::duration_cast<chrono::nanoseconds> (t2 - t1).count();
 
-        fout << chrono::duration_cast<chrono::nanoseconds> (t2 - t1).count() << '\n';
+        auto delta = chrono::duration_cast<chrono::nanoseconds> (t2 - t1).count();
+        ns += delta;
+
+        fout << delta << '\n';
     }
 
     fout << ns << '\n';
