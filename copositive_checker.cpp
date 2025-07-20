@@ -319,6 +319,7 @@ bool isCopositive(vector<vector<ld>> g) {
     q.push({g, -1});
 
     while(q.size()) {
+        cout << q.size() << '\n';
         matricesChecked++;
         vector<vector<ld>> v = q.front().first;
         int prev = q.front().second;

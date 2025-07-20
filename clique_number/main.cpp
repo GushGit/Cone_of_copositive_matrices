@@ -28,8 +28,9 @@ int main() {
 
         int expected;
         fin >> expected;
-        if(expected != cliqueNumber(v)) {
-            cout << "WRONG ANSWER ON TEST " << i << endl;
+        int ans = cliqueNumber(v);
+        if(expected != ans) {
+            cout << "WRONG ANSWER ON TEST " << i << " : " << ans << endl;
         } else cout << "PASSED TEST " << i << endl;
     }
 }

@@ -41,8 +41,8 @@ def normal_random(mean, std_dev):
   	z0 = math.sqrt(-2.0 * math.log(u1)) * math.cos(2.0 * math.pi * u2)
   	return mean + z0 * std_dev
 
-def gen_zero_matr(n):
-	return [[0 for i in range(n)] for j in range(n)]
+def gen_val_matr(n, val = 0):
+	return [[val for i in range(n)] for j in range(n)]
 
 def matr_to_str(m):
 	n = len(m)
@@ -72,12 +72,15 @@ def shuffle_adjacency_matrix(adj_m):
 ##
 
 def gaussian_random_matrix(n, m, d):
-	matr = gen_zero_matr(n)
+	matr = gen_val_matr(n)
 	for i in range(n):
 		for j in range(i, n):
 			r = normal_random(m, d)
 			matr[i][j] = r
 			matr[j][i] = r
+
+	for i in range(n):
+		matr[i][i] = abs(matr[i][i])
 
 	return matr_to_str(matr)
 
@@ -106,12 +109,14 @@ def border_cop_matrix(n):
 	return matr_to_str(M)
 
 def complete_graph(n):
-	return matr_to_str([[1 for i in range(n)] for j in range(n)])
+	matr = [[1 for i in range(n)] for j in range(n)]
+	for i in range(n): matr[i][i] = 0
+	return matr_to_str(matr)
 
 def random_edge(n, p):
 	p = min(1, max(0, p))
 
-	matr = gen_zero_matr(n)
+	matr = gen_val_matr(n)
 
 	for i in range(n):
 		for j in range(i + 1, n):
@@ -124,7 +129,7 @@ def k_regular_graph(n, k):
 	if (n * k) % 2 != 0:
 		raise ValueError("n*k must be even")
 	
-	matr = gen_zero_matr(n)
+	matr = gen_val_matr(n)
 
 	if k == 0:
 		pass
@@ -191,10 +196,9 @@ config = [t_mode[0].__name__, t_mode[1], t, csut, rv, cs, cisp, cisppn, csisp]
 for i in range(len(config) - 1):
 	filename += str(config[i]) + "_"
 filename += str(config[-1])
-filename = "./input/" + filename
 
-t_file = open(filename, "w")
-print(filename)
+t_file = open("./input/" + filename, "w")
+print('"' + filename + '"')
 
 t_file.writelines("comment: " + cmt + '\n')
 t_file.writelines(list(map(lambda x: str(x) + '\n', config[1:])))

@@ -20,7 +20,7 @@ string conf(vector<int> vals) {
 int main() {
     string iconf;
     cin >> iconf;
-    ifstream fin(iconf);
+    ifstream fin("../measurement_interface/input/" + iconf);
 
     string commentary;
     getline(fin, commentary);
@@ -49,9 +49,8 @@ int main() {
         checkSubtractInSP,
     });
 
-    cout << configuration << '\n';
-    configuration = "../measurement_interface/output/" + configuration;
-    ofstream fout(configuration);
+    cout << iconf << '\n';
+    ofstream fout("../measurement_interface/output/" + iconf);
 
     fout << commentary << '\n';
 
